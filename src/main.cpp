@@ -22,8 +22,7 @@ int buttonStatus_Yellow = 0;
 
 int button_Green = 29;
 int buttonStatus_Green = 0;
-
-
+int lastbuttonState_Green =0;
 
 int button_Red = 31;
 int buttonStatus_Red = 0;
@@ -39,6 +38,12 @@ int buttonPushCounter_Yellow_Green_LC = 0;
 
 int Meters_fabric_A = 0;
 int SetupMeters_D200 = 0;
+
+int buttonGreenPressingTime = 0; //Thời gian đọc nút nhấn Green
+unsigned long buttonGreenPressingTimeLast = 0;
+
+long debounceDelayGreen2 = 20000; //Thời gian cho giản 2 đơn vị
+long debounceDelayGreen3 = 40000; //Thời gian cho giản 3 đơn vị
 
 int result;
 void setup() {
@@ -190,6 +195,7 @@ void Button_Yellow ()
     delay(10);
     if(buttonStatus_Yellow == 0)
     {
+      
       buttonPushCounter_Yellow_Green_fabric++;
       //Serial.println(buttonStatus_Yellow);
       //Serial.println("da nhan Yellow");
@@ -200,15 +206,29 @@ void Button_Green ()
 {
   buttonStatus_Green = digitalRead(button_Green);
   //Serial.println(buttonStatus_Green);
+  
   if (buttonStatus_Green == 0)
   {
     delay(10);
+    buttonGreenPressingTime = millis();
     if(buttonStatus_Green == 0)
     {
-    buttonPushCounter_Yellow_Green_fabric--;
-    //Serial.println(buttonStatus_Green);
-    //Serial.println("da nhan Green");
+      unsigned long a = buttonGreenPressingTime - buttonGreenPressingTimeLast;
+      Serial.println(a);
+      if(debounceDelayGreen1 > a);
+      {
+        buttonPushCounter_Yellow_Green_fabric--;
+      }
+
+      //Serial.println(buttonStatus_Green);
+      //Serial.println("da nhan Green");
+      
     }
+  }
+  if (buttonStatus_Green != lastbuttonState_Green)
+  {
+    buttonGreenPressingTimeLast = buttonGreenPressingTime;
+    lastbuttonState_Green = buttonStatus_Green;
   }
 }
 
@@ -286,8 +306,8 @@ void loop() {
     display.setCursor(0, 10);
     display.println("->");
     display.setCursor(15, 10);
-    display.println("Set Fabric:");
-    display.setCursor(85,10);
+    display.println("Set Fabric1:");
+    display.setCursor(87,10);
     display.println(buttonPushCounter_Yellow_Green_fabric); 
     delay(100);
   }
