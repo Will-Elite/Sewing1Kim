@@ -34,7 +34,8 @@ int buttonPushCounter_red = 0;
 // Biến Number of meters of fabric
 int Meters_fabric = 0;
 int SetupMeters_fabric = 0;
-int buttonPushCounter_Yellow_Green = 0;
+int buttonPushCounter_Yellow_Green_fabric = 0;
+int buttonPushCounter_Yellow_Green_LC = 0;
 
 int Meters_fabric_A = 0;
 int SetupMeters_D200 = 0;
@@ -67,13 +68,13 @@ void Read_value_M5()
   result = node.readCoils(address_M5, 1);
   if(result == node.ku8MBSuccess)
   {
-    Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
+    //Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
     String input_status_str = String (node.getResponseBuffer(0));
     input_status = input_status_str.toInt();   
   }
   else
   {
-    Serial.println("M"+ String(address_M5) + "Read Error");
+    //Serial.println("M"+ String(address_M5) + "Read Error");
   }
 }
 
@@ -82,7 +83,7 @@ void Read_value_M30()
 {
   int address_M30 = 30;
   result = node.readCoils(address_M30, 1);
-  Serial.println("M" + String(address_M30) + "value:"+ String(node.getResponseBuffer(0)));
+  //Serial.println("M" + String(address_M30) + "value:"+ String(node.getResponseBuffer(0)));
   String input_status_str_M30 = String (node.getResponseBuffer(0));
   input_Stop = input_status_str_M30.toInt();
 
@@ -100,11 +101,11 @@ void Read_Vadlue_D54 ()
   if (result == node.ku8MBSuccess)
   {
     Meters_fabric = node.getResponseBuffer(0);
-    Serial.println("Met:" + String(Meters_fabric));
+    //Serial.println("Met:" + String(Meters_fabric));
   }
   else
   {
-    Serial.println ("Meters Read Error");
+    //Serial.println ("Meters Read Error");
   }
 }
 
@@ -116,15 +117,15 @@ void Read_value_metters_setup()
   if (result == node.ku8MBSuccess)
   {
     SetupMeters_fabric = node.getResponseBuffer(0);
-    Serial.println("Setup meters:" + String(SetupMeters_fabric));
+    //Serial.println("Setup meters:" + String(SetupMeters_fabric));
   }
   else 
   {
-    Serial.println ("Meters setup Read Error");
+    //Serial.println ("Meters setup Read Error");
   }
 }
 
-//Read D200
+//Read D200 set fabric
 void Read_value_metters_setup_D200()
 {
   int address_D200 = 200;
@@ -132,27 +133,30 @@ void Read_value_metters_setup_D200()
   if (result == node.ku8MBSuccess)
   {
     SetupMeters_D200 = node.getResponseBuffer(0);
-    Serial.println("Setup meters:" + String(SetupMeters_D200));
+    //Serial.println("Setup meters:" + String(SetupMeters_D200));
   }
   else 
   {
-    Serial.println ("Meters setup Read Error");
+    //Serial.println ("Meters setup Read Error");
   }
 }
+
+//Read D210 set Collar
+
 
 // write set fabric 
 void Write_value_metters_setup_D200()
 {
   int address_Write = 200; // Địa chỉ vùng nhớ D plc
-    int value_to_write = buttonPushCounter_Yellow_Green;
+    int value_to_write = buttonPushCounter_Yellow_Green_fabric;
     result = node.writeSingleRegister(address_Write, value_to_write);
     if (result == node.ku8MBSuccess)
     {
-      Serial.println("Write to D200 successful");
+      //Serial.println("Write to D200 successful");
     }
     else
     {
-      Serial.println("Write to D200 failed");
+      //Serial.println("Write to D200 failed");
     }
     delay(500);
 }
@@ -161,49 +165,49 @@ void Write_value_metters_setup_D200()
 void Button_Red ()
 {
   buttonStatus_Red = digitalRead(button_Red);
-  Serial.println(buttonStatus_Red);
+  //Serial.println(buttonStatus_Red);
   if (buttonStatus_Red != lastbuttonState_red)
   {
     delay(10);
     if (buttonStatus_Red == 0)
     {
       buttonPushCounter_red++;
-      Serial.println(buttonStatus_Red);
-      Serial.println("Da nhan Red");
-      while (digitalRead(button_Red) == 0);
+      //Serial.println(buttonStatus_Red);
+      //Serial.println("Da nhan Red");
+      //while (digitalRead(button_Red) == 0);
     }    
   }
   lastbuttonState_red = buttonStatus_Red;
-  Serial.println(buttonPushCounter_red);
+  //Serial.println(buttonPushCounter_red);
 }
 
 void Button_Yellow ()
 {
   buttonStatus_Yellow = digitalRead(button_Yellow);
-  Serial.println(buttonStatus_Yellow);
+  //Serial.println(buttonStatus_Yellow);
   if (buttonStatus_Yellow == 0)
   {
     delay(10);
     if(buttonStatus_Yellow == 0)
     {
-      buttonPushCounter_Yellow_Green++;
-      Serial.println(buttonStatus_Yellow);
-      Serial.println("da nhan Yellow");
+      buttonPushCounter_Yellow_Green_fabric++;
+      //Serial.println(buttonStatus_Yellow);
+      //Serial.println("da nhan Yellow");
     }
   }
 }
 void Button_Green ()
 {
   buttonStatus_Green = digitalRead(button_Green);
-  Serial.println(buttonStatus_Green);
+  //Serial.println(buttonStatus_Green);
   if (buttonStatus_Green == 0)
   {
     delay(10);
     if(buttonStatus_Green == 0)
     {
-    buttonPushCounter_Yellow_Green--;
-    Serial.println(buttonStatus_Green);
-    Serial.println("da nhan Green");
+    buttonPushCounter_Yellow_Green_fabric--;
+    //Serial.println(buttonStatus_Green);
+    //Serial.println("da nhan Green");
     }
   }
 }
@@ -224,12 +228,12 @@ void loop() {
   Read_value_metters_setup_D200();
  
   // write set fabric 
-  if (buttonPushCounter_red == 3)
+  if (buttonPushCounter_red == 2)
   {
     Write_value_metters_setup_D200();
   }
 
-  Serial.println("test:" + String(input_status));
+  //Serial.println("test:" + String(input_status));
     if (input_status == 0)
     {
       status_machine = 0; // Machine stop
@@ -266,8 +270,8 @@ void loop() {
       display.setCursor(50,20); // x,y
       display.println("STOP");
     }
-    buttonPushCounter_Yellow_Green = SetupMeters_D200;
-    delay(1000);
+    buttonPushCounter_Yellow_Green_fabric = SetupMeters_D200;
+    delay(300);
   }
 
   if (buttonPushCounter_red == 1)
@@ -284,31 +288,19 @@ void loop() {
     display.setCursor(15, 10);
     display.println("Set Fabric:");
     display.setCursor(85,10);
-    display.println(buttonPushCounter_Yellow_Green);
-
-    display.setCursor(0, 20);
-    display.println("->");
-    display.setCursor(15, 20);
-    display.println("Length LC:");
-    display.setCursor(85,20);
-    
+    display.println(buttonPushCounter_Yellow_Green_fabric); 
     delay(100);
   }
+
+
+  //success
   if (buttonPushCounter_red == 2)
   {
     display.clearDisplay();
-    display.setTextColor(WHITE);  
-    display.setTextSize(1);
-    display.setCursor(0,0);
-    display.println("Fabric:");
-    display.setCursor(50,0);
-    display.println(SetupMeters_fabric);
-    display.setCursor(0, 10);
-    display.println("  ");
-    display.setCursor(15, 10);
-    display.println("Set Fabric:");
-    display.setCursor(85,10);
-    display.println(buttonPushCounter_Yellow_Green);
+    display.setTextColor(WHITE);
+    display.setTextSize(2);
+    display.setCursor(0,0); 
+    display.println("success");
   }
 
   display.display();
@@ -320,7 +312,7 @@ Button_Yellow ();
 Button_Green ();  
   
   
-  if (buttonPushCounter_red > 3)
+  if (buttonPushCounter_red > 2)
   {
     buttonPushCounter_red = 0;
   }
