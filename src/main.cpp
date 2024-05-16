@@ -10,7 +10,8 @@
 // Initialize the OLED display
 Adafruit_SH1106 display(OLED_REST);
 
-ModbusMaster node;
+ModbusMaster node; // Slave 2 (plc)
+ModbusMaster node1; // Slave 1 (BFC)
 
 int input_status = 0;
 int status_machine = 0;
@@ -19,10 +20,11 @@ int input_Stop = 0;
 // Button 
 int button_Yellow = 27;
 int buttonStatus_Yellow = 0;
+int lastbuttonState_Yellow = 0;
 
 int button_Green = 29;
 int buttonStatus_Green = 0;
-int lastbuttonState_Green =0;
+int lastbuttonState_Green = 0;
 
 int button_Red = 31;
 int buttonStatus_Red = 0;
@@ -39,17 +41,32 @@ int buttonPushCounter_Yellow_Green_LC = 0;
 int Meters_fabric_A = 0;
 int SetupMeters_D200 = 0;
 
-int buttonGreenPressingTime = 0; //Thời gian đọc nút nhấn Green
-unsigned long buttonGreenPressingTimeLast = 0;
+unsigned long buttonYellowPressingTime = 0; //Thời gian đọc nút nhấn Green
+unsigned long buttonYellowPressingTimeLast = 0;
+unsigned long debounceDelayYellow1 = 5000; //Thời gian cho giảm 1 đơn vị 5000
+unsigned long debounceDelayYellow2 = 10000; //Thời gian cho giản 2 đơn vị 10000
+unsigned long debounceDelayYellow3 = 20000; //Thời gian cho giản 3 đơn vị 20000
+unsigned long debounceDelayYellow4 = 30000; //Thời gian cho giản 3 đơn vị 30000
 
-long debounceDelayGreen2 = 20000; //Thời gian cho giản 2 đơn vị
-long debounceDelayGreen3 = 40000; //Thời gian cho giản 3 đơn vị
+unsigned long buttonGreenPressingTime = 0; //Thời gian đọc nút nhấn Green
+unsigned long buttonGreenPressingTimeLast = 0;
+unsigned long debounceDelayGreen1 = 5000; //Thời gian cho giảm 1 đơn vị 5000
+unsigned long debounceDelayGreen2 = 10000; //Thời gian cho giản 2 đơn vị 10000
+unsigned long debounceDelayGreen3 = 20000; //Thời gian cho giản 3 đơn vị 20000
+unsigned long debounceDelayGreen4 = 30000; //Thời gian cho giản 3 đơn vị 30000
 
 int result;
+int SlavePLC = 2;
+int SlaveBFC = 1;
+
+int Read_value_BF5R = 0;
+
+
 void setup() {
   Serial.begin(9600);
-  Serial1.begin(9600);
-  node.begin (1, Serial1);
+  Serial1.begin(38400);
+  node.begin (SlavePLC, Serial1);
+  node1.begin (SlaveBFC, Serial1);
 
   // Start up the OLED display
   display.begin(SH1106_SWITCHCAPVCC, 0x3C);
@@ -67,19 +84,38 @@ void setup() {
   pinMode (button_Yellow, INPUT_PULLUP);
 }
 
+void Read_value_BFC () 
+{
+ 
+  const int inputRegisterAddress_Read_1 = 0x00C8;
+  result = node1.readInputRegisters(0x00C8, 1);
+
+  if(result == node1.ku8MBSuccess)
+  {
+    Read_value_BF5R = node1.getResponseBuffer(0);
+
+    Serial.print("Value BF5R:");
+    Serial.println(Read_value_BF5R);
+  }
+  else
+  {
+    Serial.println("Error reading Input Register");
+  }
+}
+
 void Read_value_M5()
 {  
   int address_M5 = 5;
   result = node.readCoils(address_M5, 1);
   if(result == node.ku8MBSuccess)
   {
-    //Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
+    Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
     String input_status_str = String (node.getResponseBuffer(0));
     input_status = input_status_str.toInt();   
   }
   else
   {
-    //Serial.println("M"+ String(address_M5) + "Read Error");
+    Serial.println("M"+ String(address_M5) + "Read Error");
   }
 }
 
@@ -193,13 +229,38 @@ void Button_Yellow ()
   if (buttonStatus_Yellow == 0)
   {
     delay(10);
+    buttonYellowPressingTime = millis();
     if(buttonStatus_Yellow == 0)
     {
-      
+      unsigned long b = buttonYellowPressingTime - buttonYellowPressingTimeLast;
+      Serial.println(b);
+      if(debounceDelayYellow1 > b)
+      {
       buttonPushCounter_Yellow_Green_fabric++;
+      }
+      else if ((debounceDelayYellow2 > b) && (b > debounceDelayYellow1))
+      {
+        buttonPushCounter_Yellow_Green_fabric += 2;
+      }
+      else if((debounceDelayYellow3 > b) && (b > debounceDelayYellow2))
+      {
+        buttonPushCounter_Yellow_Green_fabric += 3;
+      }
+      else if((debounceDelayYellow4 > b) && (b > debounceDelayYellow3))
+      {
+        buttonPushCounter_Yellow_Green_fabric += 5;
+      }
+      else if(b > debounceDelayYellow4){
+        buttonPushCounter_Yellow_Green_fabric += 100;
+      }
       //Serial.println(buttonStatus_Yellow);
       //Serial.println("da nhan Yellow");
     }
+  }
+  if (buttonStatus_Yellow != lastbuttonState_Yellow)
+  {
+    buttonYellowPressingTimeLast = buttonYellowPressingTime;
+    lastbuttonState_Yellow = buttonStatus_Yellow;
   }
 }
 void Button_Green ()
@@ -215,9 +276,28 @@ void Button_Green ()
     {
       unsigned long a = buttonGreenPressingTime - buttonGreenPressingTimeLast;
       Serial.println(a);
-      if(debounceDelayGreen1 > a);
+      if (buttonPushCounter_Yellow_Green_fabric > 0)
       {
-        buttonPushCounter_Yellow_Green_fabric--;
+        if(debounceDelayGreen1 > a)
+        {
+          buttonPushCounter_Yellow_Green_fabric--;
+        }
+        else if((debounceDelayGreen2 > a) && (a > debounceDelayGreen1))
+        {
+          buttonPushCounter_Yellow_Green_fabric -= 2;
+        }
+        else if((debounceDelayGreen3 > a) && (a > debounceDelayGreen2))
+        {
+          buttonPushCounter_Yellow_Green_fabric -= 3;
+        }
+        else if((debounceDelayGreen4 > a) && (a > debounceDelayGreen3))
+        {
+          buttonPushCounter_Yellow_Green_fabric -= 4;
+        }
+        else if (a > debounceDelayGreen4)
+        {
+          buttonPushCounter_Yellow_Green_fabric -=100;
+        }
       }
 
       //Serial.println(buttonStatus_Green);
@@ -233,9 +313,13 @@ void Button_Green ()
 }
 
 void loop() {
+  //Read value sensor
+  Read_value_BFC ();
+  delay(50);
   // Read coil value
   Read_value_M5();
-
+ 
+  
   Read_value_M30();
 
   //Read met value
