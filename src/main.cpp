@@ -60,6 +60,7 @@ int SlavePLC = 2;
 int SlaveBFC = 1;
 
 int Read_value_BF5R = 0;
+int Read_SettingValue_BF5R_CH1 = 0;
 
 
 void setup() {
@@ -86,20 +87,55 @@ void setup() {
 
 void Read_value_BFC () 
 {
- 
-  const int inputRegisterAddress_Read_1 = 0x00C8;
-  result = node1.readInputRegisters(0x00C8, 1);
+ //Khai báo địa chỉ đọc giá trị 
+  const int inputRegisterAddress_Read_1 = 0x00C8; //địa chỉ đọc giá trị
+  result = node1.readInputRegisters(inputRegisterAddress_Read_1, 1);
 
   if(result == node1.ku8MBSuccess)
   {
     Read_value_BF5R = node1.getResponseBuffer(0);
 
-    Serial.print("Value BF5R:");
-    Serial.println(Read_value_BF5R);
+    //Serial.print("Value BF5R:");
+    //Serial.println(Read_value_BF5R);
   }
   else
   {
     Serial.println("Error reading Input Register");
+  }
+}
+
+void Read_SettingValue_BF5R()
+{
+  //Khai báo địa chỉ đọc giá trị
+  const int inputRegisterAddress_Read_SV = 0x012C; //địa chỉ đọc giá trị setting value
+
+  result = node1.readInputRegisters(inputRegisterAddress_Read_SV, 1);
+  if(result == node1.ku8MBSuccess)
+  {
+    Read_SettingValue_BF5R_CH1 = node1.getResponseBuffer(0);
+    Serial.print("CH1 Setting Value:");
+    Serial.println(Read_SettingValue_BF5R_CH1);
+  }
+  else
+  {
+    Serial.println("Error reading Input Register Setting Value");
+  }
+}
+
+void Write_value_BFC()
+{
+  const int writeRegisterAddress_SettingValue = 0x0000; //địa chỉ thanh ghi vào
+  const int valueToWrite = 1133;
+  result = node1.writeSingleRegister(writeRegisterAddress_SettingValue, valueToWrite);
+  //Kiểm tra xem việc ghi có thành công hay không
+  if(result == node1.ku8MBSuccess)
+  {
+    Serial.print("ghi giá trị thành công");
+  }
+  else
+  {
+    Serial.print("Lỗi ghi:");
+    Serial.println(result, HEX);
   }
 }
 
@@ -109,13 +145,13 @@ void Read_value_M5()
   result = node.readCoils(address_M5, 1);
   if(result == node.ku8MBSuccess)
   {
-    Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
+    //Serial.println("M" + String(address_M5) + "value:"+ String(node.getResponseBuffer(0)));
     String input_status_str = String (node.getResponseBuffer(0));
     input_status = input_status_str.toInt();   
   }
   else
   {
-    Serial.println("M"+ String(address_M5) + "Read Error");
+    //Serial.println("M"+ String(address_M5) + "Read Error");
   }
 }
 
@@ -314,16 +350,12 @@ void Button_Green ()
 
 void loop() {
   //Read value sensor
-  Read_value_BFC ();
-  delay(50);
-  // Read coil value
-  Read_value_M5();
+  //Read_value_BFC ();
  
-  
-  Read_value_M30();
+ 
+  //Read button Stop
+  //Read_value_M30();
 
-  //Read met value
-  Read_Vadlue_D54 ();
   
   //Read setup meters fabric
   Read_value_metters_setup();
@@ -349,7 +381,13 @@ void loop() {
 
 // LCD
   if (buttonPushCounter_red == 0) 
-  {   
+  { 
+    // Read coil value
+    Read_value_M5();
+
+    //Read met value
+    Read_Vadlue_D54 ();
+
     display.clearDisplay();
     display.setTextColor(WHITE);  
     display.setTextSize(1);
@@ -366,7 +404,7 @@ void loop() {
       display.println("RUN ");
       if (Meters_fabric > 0)
       {
-        Meters_fabric_A = Meters_fabric;
+        Meters_fabric_A = Meters_fabric; //D54
       }   
     }
     else 
@@ -396,7 +434,6 @@ void loop() {
     delay(100);
   }
 
-
   //success
   if (buttonPushCounter_red == 2)
   {
@@ -405,20 +442,22 @@ void loop() {
     display.setTextSize(2);
     display.setCursor(0,0); 
     display.println("success");
+    delay(50);
+    Read_SettingValue_BF5R();
+    delay(50);
   }
 
   display.display();
   
-
-// Button
+  // Button
 Button_Red (); 
 Button_Yellow ();
 Button_Green ();  
-  
-  
+    
   if (buttonPushCounter_red > 2)
   {
     buttonPushCounter_red = 0;
+    Write_value_BFC();
   }
 }
 
