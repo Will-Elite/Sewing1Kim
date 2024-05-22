@@ -166,11 +166,11 @@ void Read_value_M30()
 
   if (input_Stop == 1)
   {
-  Meters_fabric_A = Meters_fabric;
+    Meters_fabric_A = Meters_fabric;
   }
 }
 
- //Read met value
+ //Read met value BF5R
 void Read_Vadlue_D54 ()
 {
   int address_Met = 54; // Địa chỉ vủng nhớ D plc
@@ -355,13 +355,6 @@ void loop() {
  
   //Read button Stop
   //Read_value_M30();
-
-  
-  //Read setup meters fabric
-  Read_value_metters_setup();
-
-  //Read D200
-  Read_value_metters_setup_D200();
  
   // write set fabric 
   if (buttonPushCounter_red == 2)
@@ -412,12 +405,22 @@ void loop() {
       display.setCursor(50,20); // x,y
       display.println("STOP");
     }
+
     buttonPushCounter_Yellow_Green_fabric = SetupMeters_D200;
     delay(300);
   }
 
   if (buttonPushCounter_red == 1)
   {
+    //Read setup meters fabric
+    Read_value_metters_setup();
+    
+    //Read met value
+    Read_Vadlue_D54 ();
+    
+    //Read D200
+    Read_value_metters_setup_D200();
+
     display.clearDisplay();
     display.setTextColor(WHITE);  
     display.setTextSize(1);
@@ -431,6 +434,10 @@ void loop() {
     display.println("Set Fabric1:");
     display.setCursor(87,10);
     display.println(buttonPushCounter_Yellow_Green_fabric); 
+    display.setCursor(15, 20);
+    display.println("Set BFC    :");
+    display.setCursor(87, 20);
+    display.println("aaaaaa");
     delay(100);
   }
 
